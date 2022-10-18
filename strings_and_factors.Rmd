@@ -31,7 +31,17 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ```{r}
 string_vec = c("my", "name", "is", "jeff")
+
+str_detect(string_vec, "Jeff") # case-sensitive
+
+str_detect(string_vec, "a")
+
+str_replace(string_vec, "jeff", "Jeff")
+
+str_replace(string_vec, "m", "M")
 ```
+
+When you need to deal with some **regular expressions** ...
 
 ```{r}
 string_vec = c(
@@ -40,6 +50,10 @@ string_vec = c(
   "i think this will be quite fun actually",
   "it will be fun, i think"
   )
+
+str_detect(string_vec, "^i think") # ^: begin with the regular expression
+
+str_detect(string_vec, "i think$") # $: end with the regular expression
 ```
 
 
@@ -50,16 +64,25 @@ string_vec = c(
   "BBQ and Bushwalking at Molonglo Gorge",
   "BUSH -- LIVE IN CONCERT!!"
   )
+
+str_detect(string_vec, "Bush")
+
+str_detect(string_vec, "[Bb]ush") # upper case or lower case b
+
+str_detect(string_vec, "[Bb][Uu][Ss][Hh]")
 ```
 
+A number followed by letter(s)
 
 ```{r}
 string_vec = c(
   '7th inning stretch',
   '1st half soon to begin. Texas won the toss.',
-  'she is 5 feet 4 inches tall',
+  'she is 5 feet 4 inches tall', # number followed by space
   '3AM - cant sleep :('
   )
+
+str_detect(string_vec, "[0-9][a-zA-Z]")
 ```
 
 
@@ -70,8 +93,11 @@ string_vec = c(
   'my flight is AA711',
   'NetBios: scanning ip 203.167.114.66'
   )
+
+str_detect(string_vec, "7.11") # "." indicates anything except for nothing
 ```
 
+To find a real bracket ..?
 
 ```{r}
 string_vec = c(
@@ -80,6 +106,10 @@ string_vec = c(
   ':-[',
   'I found the answer on pages [6-7]'
   )
+
+str_detect(string_vec, "\\[")
+
+str_detect(string_vec, "\\[[0-9]")
 ```
 
 
@@ -87,6 +117,12 @@ string_vec = c(
 
 ```{r}
 factor_vec = factor(c("male", "male", "female", "female"))
+
+as.numeric(factor_vec) # convert into numeric
+
+factor_vec = fct_relevel(factor_vec, "male")
+
+as.numeric(factor_vec)
 ```
 
 
@@ -101,3 +137,37 @@ table_marj =
   first() %>% 
   slice(-1)
 ```
+
+tidy up the NSDUH data ...
+
+```{r}
+marj_df = 
+  table_marj %>% 
+  select(-contains("P value")) %>% 
+  pivot_longer(
+    -State,
+    names_to = "age_year",
+    values_to = "percent"
+  ) %>% 
+  mutate(
+    percent = str_replace(percent, "[a-b]$", ""),
+    percent = as.numeric(percent)
+  ) %>% 
+  separate(age_year, into = c("age", "year"), sep = "\\(") %>% 
+  mutate(
+    year = str_replace(year, "\\)", "")
+  ) %>% 
+  filter(
+    !(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West", "District of Columbia"))
+  )
+```
+
+```{r}
+marj_df %>% 
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% 
+  ggplot(aes(x = State, y = percent, color = year)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
